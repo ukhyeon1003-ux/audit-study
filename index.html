@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회계감사 셀프 암기 & O/X 테스트기</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #cbd5e1;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --fav: #eab308;
+    --acronym: #7c3aed;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", sans-serif; }
+  body { background: var(--bg); color: var(--text); padding: 20px 16px; line-height: 1.5; }
+  .container { max-width: 960px; margin: 0 auto; }
+
+  /* 헤더 및 탭 네비게이션 */
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+  header h1 { font-size: 22px; font-weight: 700; color: #1e293b; }
+  .nav-tabs { display: flex; gap: 8px; }
+  .tab-btn { padding: 9px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 14px; font-weight: 700; color: var(--text-muted); transition: 0.2s; }
+  .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* 공통 카드 컴포넌트 */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .card.editing-mode { border: 2px solid var(--warning); background: #fffdfa; }
+  h2 { font-size: 17px; margin-bottom: 14px; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+
+  /* 폼 요소 */
+  .form-group { margin-bottom: 14px; }
+  .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .form-row .form-group { flex: 1; min-width: 200px; }
+  label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #334155; }
+  input[type="text"], textarea, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; }
+  input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--primary); }
+  textarea { min-height: 75px; resize: vertical; }
+
+  /* 버튼류 */
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: 0.15s; gap: 4px; user-select: none; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid var(--border); }
+  .btn-secondary:hover { background: #e2e8f0; }
+  .btn-danger { background: #fee2e2; color: var(--danger); }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-warning { background: #fef3c7; color: #92400e; }
+  .btn-warning:hover { background: #fde68a; }
+
+  /* 별표 즐겨찾기 버튼 */
+  .star-btn { background: none; border: none; font-size: 22px; cursor: pointer; color: #cbd5e1; line-height: 1; padding: 0 4px; }
+  .star-btn.active { color: var(--fav); }
+
+  /* 뱃지 */
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+  .badge-std { background: #e0e7ff; color: #3730a3; }
+  .badge-ox { background: #fef3c7; color: #92400e; }
+  .badge-no { background: #e2e8f0; color: #1e293b; font-family: monospace; font-size: 12px; }
+  .badge-edit { background: #fee2e2; color: #b91c1c; }
+  .badge-acronym { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+
+  /* 하위 문항 등록 카드 */
+  .sub-item-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .sub-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+
+  /* 문제 목록 */
+  .item-list { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+  .item-row { border: 1px solid var(--border); border-radius: 10px; background: #ffffff; padding: 14px; }
+  .item-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .item-main { display: flex; align-items: center; gap: 8px; flex: 1; flex-wrap: wrap; }
+  .item-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .item-body { margin-top: 12px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #edf2f7; font-size: 13.5px; line-height: 1.6; }
+  .item-body-detail { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+
+  /* 모달 */
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px; }
+  .modal-box { background: #fff; width: 100%; max-width: 820px; max-height: 85vh; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.25); }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .modal-content { flex: 1; overflow-y: auto; border: 1px solid var(--border); padding: 16px; background: #ffffff; border-radius: 6px; font-family: '맑은 고딕', sans-serif; line-height: 1.7; }
+
+  /* 시험 UI */
+  .test-box { border: 2px solid var(--border); border-radius: 12px; padding: 24px; background: #fff; }
+  .prompt-card { background: #f8fafc; border-left: 5px solid var(--primary); padding: 16px; border-radius: 6px; margin-bottom: 20px; }
+  .prompt-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .prompt-no { font-size: 14px; font-weight: 700; color: var(--primary); background: #dbeafe; padding: 2px 8px; border-radius: 4px; }
+  .prompt-title { font-size: 18px; font-weight: 700; color: #0f172a; }
+
+  .hint-container { margin-top: 10px; }
+  .hint-box { display: none; margin-top: 8px; padding: 10px 14px; background: #f3e8ff; border: 1px dashed var(--acronym); border-radius: 6px; font-size: 14px; font-weight: 700; color: #6b21a8; }
+
+  .test-sub-block { margin-bottom: 18px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: #ffffff; }
+  .test-sub-label { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; justify-content: space-between; }
+
+  .ox-select { display: flex; gap: 12px; margin-bottom: 16px; }
+  .ox-btn { flex: 1; padding: 14px; font-size: 20px; font-weight: 800; border: 2px solid var(--border); border-radius: 8px; background: #fff; cursor: pointer; }
+  .ox-btn.selected { border-color: var(--primary); background: #eff6ff; color: var(--primary); }
+
+  .result-panel { margin-top: 20px; padding: 16px; border-radius: 8px; background: #f8fafc; border: 1px solid var(--border); }
+  .kw-tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; margin: 2px; }
+  .kw-ok { background: #dcfce7; color: var(--success); }
+  .kw-miss { background: #fee2e2; color: var(--danger); text-decoration: line-through; }
+  .compare-view { margin-top: 10px; padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>회계감사 셀프 암기 & O/X 테스트기</h1>
+    <div class="nav-tabs">
+      <button class="tab-btn active" id="tab-test-btn" onclick="switchTab('test')">📝 시험 보기</button>
+      <button class="tab-btn" id="tab-manage-btn" onclick="switchTab('manage')">⚙️ 문제 전체 내역 & 관리</button>
+    </div>
+  </header>
+
+  <!-- 1. 시험 보기 화면 -->
+  <div id="view-test" style="display: block;">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; flex-wrap:wrap; gap:8px;">
+        <h2>진행 중인 테스트</h2>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <select id="test-filter" onchange="initTest()" style="width:auto; padding:6px 12px;">
+            <option value="all">전체 문제</option>
+            <option value="fav">⭐ 즐겨찾기만</option>
+            <option value="std">기준서 문장 암기만</option>
+            <option value="ox">O/X 문제만</option>
+          </select>
+          <button class="btn btn-secondary" onclick="initTest()">🔄 다시 섞기</button>
+        </div>
+      </div>
+      <div id="test-box" class="test-box"></div>
+    </div>
+  </div>
+
+  <!-- 2. 문제 전체 내역 및 관리 화면 -->
+  <div id="view-manage" style="display: none;">
+    <!-- 기준서 문장 등록/수정 카드 -->
+    <div class="card" id="card-std">
+      <h2 id="title-std"><span class="badge badge-std">기준서 문장</span> 기준서 문장 및 하위 문장 등록</h2>
+      
+      <div class="form-row">
+        <div class="form-group" style="flex: 0.25;">
+          <label>기준서 번호 / 조문 번호</label>
+          <input type="text" id="std-no" placeholder="예: 315.12, 505.7">
+        </div>
+        <div class="form-group" style="flex: 0.5;">
+          <label>문장 제목 / 암기 주제 (시험 시 노출)</label>
+          <input type="text" id="std-title" placeholder="예: 외부조회 회신 거부 시 감사인의 절차">
+        </div>
+        <div class="form-group" style="flex: 0.25;">
+          <label>두문자 암기 팁 (선택)</label>
+          <input type="text" id="std-acronym" placeholder="예: 거·타·대">
+        </div>
+      </div>
+
+      <div style="margin-top: 10px; margin-bottom: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+          <label style="margin-bottom:0;">하위 문항 및 필수 키워드 목록</label>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="addSubItemInput()">+ 하위 문항 추가</button>
+        </div>
+        <div id="sub-items-container"></div>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top: 10px;">
+        <button class="btn btn-primary" id="btn-save-std" onclick="saveStandardItem()">기준서 문장 세트 저장</button>
+        <button class="btn btn-secondary" id="btn-cancel-std" onclick="cancelEdit('std')" style="display:none;">수정 취소</button>
+      </div>
+    </div>
+
+    <!-- O/X 문제 등록/수정 카드 -->
+    <div class="card" id="card-ox">
+      <h2 id="title-ox"><span class="badge badge-ox">O/X</span> O/X 문제 등록</h2>
+      <div class="form-row">
+        <div class="form-group" style="flex: 0.35;">
+          <label>문제 / 기준 번호 (선택)</label>
+          <input type="text" id="ox-no" placeholder="예: OX-01, 240.11">
+        </div>
+        <div class="form-group" style="flex: 0.65;">
+          <label>정답</label>
+          <select id="ox-answer" onchange="toggleOxReasonField()">
+            <option value="X">X (오답)</option>
+            <option value="O">O (정답)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>지문 / 문제 내용</label>
+        <textarea id="ox-text" placeholder="예: 중요성의 기준금액은 재무제표 전체 수준에서만 결정되며, 특정 거래유형에 대해서는 결정하지 않는다."></textarea>
+      </div>
+      <div id="ox-reason-box">
+        <div class="form-group">
+          <label>X에 대한 올바른 근거 설명</label>
+          <textarea id="ox-reason" placeholder="예: 필요한 경우 특정 거래유형, 계정잔액 또는 공시에 대해서도 별도의 중요성 기준금액을 결정하여야 한다."></textarea>
+        </div>
+        <div class="form-group">
+          <label>근거 서술에 필수 포함될 키워드 (쉼표 ',' 구분)</label>
+          <input type="text" id="ox-kw" placeholder="특정 거래유형, 계정잔액, 공시, 별도의 중요성">
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-primary" id="btn-save-ox" onclick="saveOxItem()">O/X 문제 등록</button>
+        <button class="btn btn-secondary" id="btn-cancel-ox" onclick="cancelEdit('ox')" style="display:none;">수정 취소</button>
+      </div>
+    </div>
+
+    <!-- 문제 전체 내역 리스트 -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom: 12px;">
+        <h2>문제 전체 내역 (<span id="total-count">0</span>문항)</h2>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="openWordModal()">📄 워드로 내보내기 / 복사</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleAllDetails()">📖 본문 전체 열기/접기</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportData()">💾 백업</button>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">📂 불러오기</button>
+          <input type="file" id="import-file" style="display:none;" onchange="importData(event)">
+        </div>
+      </div>
+      <div class="item-list" id="item-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 워드 내보내기 모달 창 -->
+<div class="modal-overlay" id="word-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 style="font-size:16px; font-weight:700;">📄 회계감사 정리본 (Word용)</h3>
+      <button class="btn btn-secondary btn-sm" onclick="closeWordModal()">닫기 ✕</button>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <button class="btn btn-primary btn-sm" onclick="copyWordContent()">📋 전체 서식 복사 (Word에 붙여넣기)</button>
+      <button class="btn btn-secondary btn-sm" onclick="downloadWordDoc()">💾 .doc 파일 다운로드</button>
+    </div>
+    <div class="modal-content" id="word-preview"></div>
+  </div>
+</div>
+
+<script>
+// 데이터 관리 (LocalStorage)
+const STORAGE_KEY = 'AUDIT_APP_DB_FINAL';
+let items = [];
+
+try {
+  items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+} catch (e) {
+  items = [];
+}
+
+let editingStdId = null;
+let editingOxId = null;
+let expandAll = false;
+
+function saveStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  updateCount();
+  renderItemList();
+}
+
+function updateCount() {
+  const el = document.getElementById('total-count');
+  if (el) el.innerText = items.length;
+}
+
+// 탭 전환
+function switchTab(target) {
+  const tabTestBtn = document.getElementById('tab-test-btn');
+  const tabManageBtn = document.getElementById('tab-manage-btn');
+  const viewTest = document.getElementById('view-test');
+  const viewManage = document.getElementById('view-manage');
+
+  if (target === 'test') {
+    tabTestBtn.classList.add('active');
+    tabManageBtn.classList.remove('active');
+    viewTest.style.display = 'block';
+    viewManage.style.display = 'none';
+    initTest();
+  } else {
+    tabManageBtn.classList.add('active');
+    tabTestBtn.classList.remove('active');
+    viewManage.style.display = 'block';
+    viewTest.style.display = 'none';
+    renderItemList();
+  }
+}
+
+function toggleOxReasonField() {
+  const ans = document.getElementById('ox-answer').value;
+  document.getElementById('ox-reason-box').style.display = (ans === 'X') ? 'block' : 'none';
+}
+
+function toggleFavorite(id) {
+  const item = items.find(i => i.id === id);
+  if (item) {
+    item.favorite = !item.favorite;
+    saveStorage();
+  }
+}
+
+function moveItem(index, direction) {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= items.length) return;
+  const temp = items[index];
+  items[index] = items[newIndex];
+  items[newIndex] = temp;
+  saveStorage();
+}
+
+function toggleAllDetails() {
+  expandAll = !expandAll;
+  document.querySelectorAll('.item-body').forEach(b => {
+    b.style.display = expandAll ? 'block' : 'none';
+  });
+}
+
+function toggleSingleDetail(id) {
+  const el = document.getElementById('detail-' + id);
+  if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+
+function toggleAcronymHint() {
+  const box = document.getElementById('acronym-hint-box');
+  const btn = document.getElementById('btn-acronym-hint');
+  if (!box) return;
+  if (box.style.display === 'none' || box.style.display === '') {
+    box.style.display = 'block';
+    if (btn) btn.innerText = '💡 두문자 힌트 숨기기';
+  } else {
+    box.style.display = 'none';
+    if (btn) btn.innerText = '💡 두문자 힌트 보기';
+  }
+}
+
+// 하위 문항 입력란 추가
+function addSubItemInput(subLabel = '', text = '', kw = '') {
+  const container = document.getElementById('sub-items-container');
+  const count = container.children.length + 1;
+  const card = document.createElement('div');
+  card.className = 'sub-item-card';
+  card.innerHTML = `
+    <div class="sub-item-header">
+      <strong style="font-size:13px; color:#334155;">하위 문항 #${count}</strong>
+      <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.sub-item-card').remove(); updateSubItemLabels();">삭제</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex: 0.35;">
+        <label>소목차 / 번호</label>
+        <input type="text" class="sub-label" placeholder="예: (1)" value="${escapeHtml(subLabel || `(${count})`)}">
+      </div>
+      <div class="form-group" style="flex: 0.65;">
+        <label>핵심 키워드 (쉼표 구분)</label>
+        <input type="text" class="sub-kw" placeholder="예: 거부 사유, 타당성, 감사증거" value="${escapeHtml(kw)}">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>기준서 본문</label>
+      <textarea class="sub-text" placeholder="기준서 세부 문장을 입력하세요.">${escapeHtml(text)}</textarea>
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+function updateSubItemLabels() {
+  const cards = document.querySelectorAll('#sub-items-container .sub-item-card');
+  cards.forEach((card, idx) => {
+    card.querySelector('.sub-item-header strong').innerText = `하위 문항 #${idx + 1}`;
+  });
+}
+
+// 기준서 문장 등록 및 수정 저장
+function saveStandardItem() {
+  const stdNo = document.getElementById('std-no').value.trim();
+  const title = document.getElementById('std-title').value.trim();
+  const acronym = document.getElementById('std-acronym').value.trim();
+  const subCards = document.querySelectorAll('#sub-items-container .sub-item-card');
+
+  if (!title) return alert('문장 제목을 입력해 주세요.');
+  if (subCards.length === 0) return alert('하위 문장을 1개 이상 추가해 주세요.');
+
+  const subItems = [];
+  for (let card of subCards) {
+    const sLabel = card.querySelector('.sub-label').value.trim();
+    const sText = card.querySelector('.sub-text').value.trim();
+    const sKwRaw = card.querySelector('.sub-kw').value.trim();
+    if (!sText) return alert('하위 문장의 본문 내용을 입력해 주세요.');
+
+    const keywords = sKwRaw ? sKwRaw.split(',').map(k => k.trim()).filter(Boolean) : [];
+    subItems.push({ subLabel: sLabel, text: sText, keywords });
+  }
+
+  if (editingStdId) {
+    const idx = items.findIndex(i => i.id === editingStdId);
+    if (idx !== -1) {
+      items[idx].stdNo = stdNo || '기준서';
+      items[idx].title = title;
+      items[idx].acronym = acronym;
+      items[idx].subItems = subItems;
+      alert('기준서 문장이 성공적으로 수정되었습니다.');
+    }
+  } else {
+    items.push({
+      id: Date.now(),
+      type: 'std',
+      stdNo: stdNo || '기준서',
+      title: title,
+      acronym: acronym,
+      subItems: subItems,
+      favorite: false
+    });
+    alert('기준서 문장 세트가 등록되었습니다.');
+  }
+
+  cancelEdit('std');
+  saveStorage();
+}
+
+function editStandardItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+
+  editingStdId = id;
+  const card = document.getElementById('card-std');
+  card.classList.add('editing-mode');
+  document.getElementById('title-std').innerHTML = `<span class="badge badge-edit">수정 모드</span> 기준서 문장 수정 중`;
+  document.getElementById('btn-save-std').innerText = '수정 내용 저장';
+  document.getElementById('btn-cancel-std').style.display = 'inline-flex';
+
+  document.getElementById('std-no').value = item.stdNo || '';
+  document.getElementById('std-title').value = item.title || '';
+  document.getElementById('std-acronym').value = item.acronym || '';
+
+  const subContainer = document.getElementById('sub-items-container');
+  subContainer.innerHTML = '';
+  item.subItems.forEach(sub => {
+    addSubItemInput(sub.subLabel, sub.text, (sub.keywords || []).join(', '));
+  });
+
+  card.scrollIntoView({ behavior: 'smooth' });
+}
+
+// O/X 문제 등록 및 수정 저장
+function saveOxItem() {
+  const oxNo = document.getElementById('ox-no').value.trim();
+  const text = document.getElementById('ox-text').value.trim();
+  const answer = document.getElementById('ox-answer').value;
+  if (!text) return alert('지문을 입력해 주세요.');
+
+  let reason = '';
+  let keywords = [];
+  if (answer === 'X') {
+    reason = document.getElementById('ox-reason').value.trim();
+    const kwRaw = document.getElementById('ox-kw').value.trim();
+    keywords = kwRaw ? kwRaw.split(',').map(k => k.trim()).filter(Boolean) : [];
+  }
+
+  if (editingOxId) {
+    const idx = items.findIndex(i => i.id === editingOxId);
+    if (idx !== -1) {
+      items[idx].stdNo = oxNo || 'OX';
+      items[idx].text = text;
+      items[idx].answer = answer;
+      items[idx].reason = reason;
+      items[idx].keywords = keywords;
+      alert('O/X 문제가 성공적으로 수정되었습니다.');
+    }
+  } else {
+    items.push({
+      id: Date.now(),
+      type: 'ox',
+      stdNo: oxNo || 'OX',
+      text: text,
+      answer: answer,
+      reason: reason,
+      keywords: keywords,
+      favorite: false
+    });
+    alert('O/X 문제가 등록되었습니다.');
+  }
+
+  cancelEdit('ox');
+  saveStorage();
+}
+
+function editOxItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+
+  editingOxId = id;
+  const card = document.getElementById('card-ox');
+  card.classList.add('editing-mode');
+  document.getElementById('title-ox').innerHTML = `<span class="badge badge-edit">수정 모드</span> O/X 문제 수정 중`;
+  document.getElementById('btn-save-ox').innerText = '수정 내용 저장';
+  document.getElementById('btn-cancel-ox').style.display = 'inline-flex';
+
+  document.getElementById('ox-no').value = item.stdNo || '';
+  document.getElementById('ox-text').value = item.text || '';
+  document.getElementById('ox-answer').value = item.answer || 'X';
+  toggleOxReasonField();
+  document.getElementById('ox-reason').value = item.reason || '';
+  document.getElementById('ox-kw').value = (item.keywords || []).join(', ');
+
+  card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEdit(type) {
+  if (type === 'std') {
+    editingStdId = null;
+    const card = document.getElementById('card-std');
+    card.classList.remove('editing-mode');
+    document.getElementById('title-std').innerHTML = `<span class="badge badge-std">기준서 문장</span> 기준서 문장 및 하위 문장 등록`;
+    document.getElementById('btn-save-std').innerText = '기준서 문장 세트 저장';
+    document.getElementById('btn-cancel-std').style.display = 'none';
+
+    document.getElementById('std-no').value = '';
+    document.getElementById('std-title').value = '';
+    document.getElementById('std-acronym').value = '';
+    document.getElementById('sub-items-container').innerHTML = '';
+    addSubItemInput('(1)');
+  } else {
+    editingOxId = null;
+    const card = document.getElementById('card-ox');
+    card.classList.remove('editing-mode');
+    document.getElementById('title-ox').innerHTML = `<span class="badge badge-ox">O/X</span> O/X 문제 등록`;
+    document.getElementById('btn-save-ox').innerText = 'O/X 문제 등록';
+    document.getElementById('btn-cancel-ox').style.display = 'none';
+
+    document.getElementById('ox-no').value = '';
+    document.getElementById('ox-text').value = '';
+    document.getElementById('ox-answer').value = 'X';
+    toggleOxReasonField();
+    document.getElementById('ox-reason').value = '';
+    document.getElementById('ox-kw').value = '';
+  }
+}
+
+function deleteItem(id) {
+  if (!confirm('정말 삭제하시겠습니까?')) return;
+  if (editingStdId === id) cancelEdit('std');
+  if (editingOxId === id) cancelEdit('ox');
+  items = items.filter(i => i.id !== id);
+  saveStorage();
+}
+
+// 문제 목록 렌더링
+function renderItemList() {
+  const listEl = document.getElementById('item-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  if (items.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:30px;">등록된 문제가 없습니다. 상단에서 문제를 추가해 보세요.</div>';
+    return;
+  }
+
+  items.forEach((item, index) => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    const isStd = item.type === 'std';
+    const isFav = !!item.favorite;
+
+    let bodyHtml = '';
+    if (isStd) {
+      bodyHtml = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+          <span style="font-weight:700; color:#1e293b;">📌 하위 문항 및 원문 (${item.subItems.length}개)</span>
+          ${item.acronym ? `<span class="badge badge-acronym">두문자: ${escapeHtml(item.acronym)}</span>` : ''}
+        </div>
+        ${item.subItems.map((sub, sIdx) => `
+          <div class="item-body-detail">
+            <strong>${escapeHtml(sub.subLabel || `(${sIdx+1})`)}</strong>: ${escapeHtml(sub.text)}
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+              🔑 필수 키워드: <span style="color:#0f172a; font-weight:600;">${sub.keywords && sub.keywords.length ? escapeHtml(sub.keywords.join(', ')) : '없음'}</span>
+            </div>
+          </div>
+        `).join('')}
+      `;
+    } else {
+      bodyHtml = `
+        <div><strong>지문:</strong> ${escapeHtml(item.text)}</div>
+        <div class="item-body-detail">
+          <strong>정답:</strong> <span style="font-weight:700; color:${item.answer === 'O' ? 'var(--success)' : 'var(--danger)'};">${item.answer}</span>
+          ${item.answer === 'X' ? `<br><strong>오답 근거:</strong> ${escapeHtml(item.reason || '없음')}<br><strong>근거 키워드:</strong> ${item.keywords && item.keywords.length ? escapeHtml(item.keywords.join(', ')) : '없음'}` : ''}
+      `;
+    }
+
+    row.innerHTML = `
+      <div class="item-header">
+        <div class="item-main">
+          <button class="star-btn ${isFav ? 'active' : ''}" title="즐겨찾기 토글" onclick="toggleFavorite(${item.id})">★</button>
+          <span class="badge ${isStd ? 'badge-std' : 'badge-ox'}">${isStd ? '기준서 암기' : 'O/X'}</span>
+          <span class="badge badge-no">${escapeHtml(item.stdNo || 'No')}</span>
+          ${isStd && item.acronym ? `<span class="badge badge-acronym">두문자: ${escapeHtml(item.acronym)}</span>` : ''}
+          <strong style="font-size:15px; cursor:pointer;" onclick="toggleSingleDetail(${item.id})">
+            ${isStd ? escapeHtml(item.title) : escapeHtml(item.text.slice(0, 45)) + (item.text.length > 45 ? '...' : '')}
+          </strong>
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-secondary btn-sm" title="위로 이동" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.3;"' : ''}>▲</button>
+          <button class="btn btn-secondary btn-sm" title="아래로 이동" onclick="moveItem(${index}, 1)" ${index === items.length - 1 ? 'disabled style="opacity:0.3;"' : ''}>▼</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleSingleDetail(${item.id})">본문 보기</button>
+          <button class="btn btn-warning btn-sm" onclick="${isStd ? `editStandardItem(${item.id})` : `editOxItem(${item.id})`}">수정</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem(${item.id})">삭제</button>
+        </div>
+      </div>
+      <div class="item-body" id="detail-${item.id}" style="display: ${expandAll ? 'block' : 'none'};">
+        ${bodyHtml}
+      </div>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+// 워드 출력 및 클립보드 서식 복사
+function generateWordHtml() {
+  let doc = `<h1 style="font-size:18pt; border-bottom:2px solid #2563eb; padding-bottom:6px; margin-bottom:14px;">회계감사 기준서 & O/X 서브노트</h1>`;
+  doc += `<p style="font-size:10pt; color:#64748b; margin-bottom:16px;">출력 일시: ${new Date().toLocaleDateString()}</p>`;
+
+  items.forEach((item, idx) => {
+    const isStd = item.type === 'std';
+    doc += `<div style="margin-bottom:14px; padding:10px; border:1px solid #cbd5e1; border-radius:4px; background:#f8fafc;">`;
+    if (isStd) {
+      doc += `<div style="font-size:12pt; font-weight:bold; color:#1d4ed8; margin-bottom:6px;">
+        [기준서 ${escapeHtml(item.stdNo || '미지정')}] ${item.favorite ? '★ ' : ''}${idx + 1}. ${escapeHtml(item.title)}
+        ${item.acronym ? `<span style="font-size:10pt; color:#6b21a8; background:#f3e8ff; padding:2px 6px; border-radius:3px; margin-left:6px;">(두문자: ${escapeHtml(item.acronym)})</span>` : ''}
+      </div>`;
+      (item.subItems || []).forEach(sub => {
+        doc += `
+          <div style="margin-top:6px; margin-left:8px;">
+            <div style="font-weight:bold; color:#334155;">${escapeHtml(sub.subLabel || '')}</div>
+            <div style="margin-left:10px;">${escapeHtml(sub.text)}</div>
+            <div style="margin-left:10px; font-size:9.5pt; color:#475569;">
+              🔑 <strong>필수 키워드:</strong> <span style="color:#dc2626; font-weight:bold;">${escapeHtml((sub.keywords || []).join(', ') || '없음')}</span>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      doc += `
+        <div style="font-size:12pt; font-weight:bold; color:#1d4ed8; margin-bottom:4px;">[O/X 문항] ${item.favorite ? '★ ' : ''}${idx + 1}. (${escapeHtml(item.stdNo || 'OX')})</div>
+        <div style="margin-top:4px;"><strong>지문:</strong> ${escapeHtml(item.text)}</div>
+        <div style="margin-top:4px;"><strong>정답:</strong> <span style="font-weight:bold; color:${item.answer === 'O' ? '#16a34a' : '#dc2626'};">${item.answer}</span></div>
+      `;
+      if (item.answer === 'X') {
+        doc += `
+          <div style="margin-top:4px;"><strong>오답 근거:</strong> ${escapeHtml(item.reason || '없음')}</div>
+          <div style="font-size:9.5pt; color:#475569; margin-top:2px;">
+            🔑 <strong>근거 키워드:</strong> <span style="color:#dc2626; font-weight:bold;">${escapeHtml((item.keywords || []).join(', ') || '없음')}</span>
+          </div>
+        `;
+      }
+    }
+    doc += `</div>`;
+  });
+  return doc;
+}
+
+function openWordModal() {
+  if (items.length === 0) return alert('등록된 문제가 없습니다.');
+  document.getElementById('word-preview').innerHTML = generateWordHtml();
+  document.getElementById('word-modal').style.display = 'flex';
+}
+
+function closeWordModal() {
+  document.getElementById('word-modal').style.display = 'none';
+}
+
+function copyWordContent() {
+  const preview = document.getElementById('word-preview');
+  const range = document.createRange();
+  range.selectNode(preview);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  try {
+    document.execCommand('copy');
+    alert('전체 서식이 복사되었습니다. Word 파일이나 한글 문서에 바로 붙여넣기(Ctrl+V)하세요.');
+  } catch (err) {
+    alert('복사에 실패했습니다. 본문을 직접 드래그하여 복사해 주세요.');
+  }
+  window.getSelection().removeAllRanges();
+}
+
+function downloadWordDoc() {
+  const fullHtml = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset='utf-8'><title>회계감사 암기노트</title></head>
+    <body style="font-family:'맑은 고딕', sans-serif;">${generateWordHtml()}</body>
+    </html>
+  `;
+  const blob = new Blob(['\ufeff' + fullHtml], { type: 'application/msword;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `회계감사_암기정리_${new Date().toISOString().slice(0, 10)}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// 시험 진행 및 채점 로직
+let testDeck = [];
+let currentIdx = 0;
+let userOxChoice = null;
+
+function initTest() {
+  const filter = document.getElementById('test-filter').value;
+  testDeck = items.filter(i => {
+    if (filter === 'fav') return !!i.favorite;
+    if (filter === 'std') return i.type === 'std';
+    if (filter === 'ox') return i.type === 'ox';
+    return true;
+  });
+  testDeck.sort(() => Math.random() - 0.5);
+  currentIdx = 0;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const box = document.getElementById('test-box');
+  if (!testDeck.length) {
+    box.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:40px 0;">조건에 해당하는 문제가 없습니다. 문제를 등록하거나 필터를 확인해 주세요.</div>';
+    return;
+  }
+  if (currentIdx >= testDeck.length) {
+    box.innerHTML = `
+      <div style="text-align:center; padding:30px 0;">
+        <h3 style="font-size:20px; margin-bottom:8px;">🎉 모든 문제를 완료했습니다!</h3>
+        <p style="color:var(--text-muted); margin-bottom:16px;">수고하셨습니다. 다시 테스트를 진행하시겠습니까?</p>
+        <button class="btn btn-primary" onclick="initTest()">처음부터 다시 풀기</button>
+      </div>
+    `;
+    return;
+  }
+
+  const q = testDeck[currentIdx];
+  userOxChoice = null;
+
+  let html = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:13px; color:var(--text-muted);">
+      <div>
+        <button class="star-btn ${q.favorite ? 'active' : ''}" style="font-size:17px;" onclick="toggleFavorite(${q.id}); this.classList.toggle('active');">★</button>
+        <span>문제 [${currentIdx + 1} / ${testDeck.length}]</span>
+      </div>
+      <span class="badge ${q.type === 'std' ? 'badge-std' : 'badge-ox'}">${q.type === 'std' ? '기준서 문장 암기' : 'O/X 판단'}</span>
+    </div>
+  `;
+
+  if (q.type === 'std') {
+    html += `
+      <div class="prompt-card">
+        <div class="prompt-meta">
+          <span class="prompt-no">${escapeHtml(q.stdNo || '기준서')}</span>
+          <span style="font-size:13px; color:var(--text-muted);">기준서 조문</span>
+        </div>
+        <div class="prompt-title">📌 ${escapeHtml(q.title)}</div>
+        
+        ${q.acronym ? `
+          <div class="hint-container">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-acronym-hint" onclick="toggleAcronymHint()">💡 두문자 힌트 보기</button>
+            <div id="acronym-hint-box" class="hint-box">
+              🔑 두문자: ${escapeHtml(q.acronym)}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+      <div style="font-size:14px; color:#475569; margin-bottom:16px;">
+        위 제목에 해당하는 각 하위 항목의 기준서 본문을 서술하세요.
+      </div>
+    `;
+
+    q.subItems.forEach((sub, idx) => {
+      html += `
+        <div class="test-sub-block">
+          <div class="test-sub-label">
+            <span>${escapeHtml(sub.subLabel || `하위 문항 (${idx + 1})`)}</span>
+            <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">키워드 ${sub.keywords.length}개</span>
+          </div>
+          <textarea id="sub-input-${idx}" placeholder="${escapeHtml(sub.subLabel || '')} 내용을 입력하세요..."></textarea>
+          <div id="sub-result-${idx}"></div>
+        </div>
+      `;
+    });
+
+    html += `<button class="btn btn-primary" onclick="gradeStandard()">전체 채점 및 정답 확인</button>`;
+  } else {
+    html += `
+      <div class="prompt-card" style="border-left-color: var(--warning);">
+        <div class="prompt-meta">
+          <span class="prompt-no">${escapeHtml(q.stdNo || 'OX')}</span>
+        </div>
+        <div style="font-size:16px; font-weight:700; line-height:1.6;">${escapeHtml(q.text)}</div>
+      </div>
+      <div class="ox-select">
+        <button type="button" class="ox-btn" id="btn-ox-o" onclick="selectOx('O')">O</button>
+        <button type="button" class="ox-btn" id="btn-ox-x" onclick="selectOx('X')">X</button>
+      </div>
+      <div id="ox-input-group" style="display:none;" class="form-group">
+        <label>근거 서술 (X를 선택한 이유 및 올바른 내용)</label>
+        <textarea id="user-input" placeholder="틀린 이유와 올바른 기준 내용을 서술하세요..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="gradeOx()">제출 및 채점</button>
+    `;
+  }
+
+  html += `<div id="result-area"></div>`;
+  box.innerHTML = html;
+}
+
+function selectOx(val) {
+  userOxChoice = val;
+  document.getElementById('btn-ox-o').classList.toggle('selected', val === 'O');
+  document.getElementById('btn-ox-x').classList.toggle('selected', val === 'X');
+  document.getElementById('ox-input-group').style.display = (val === 'X') ? 'block' : 'none';
+}
+
+function calculateSimilarity(s1, s2) {
+  const str1 = (s1 || '').replace(/\s+/g, '');
+  const str2 = (s2 || '').replace(/\s+/g, '');
+  if (!str1 && !str2) return 100;
+  if (!str1 || !str2) return 0;
+
+  const track = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+  for (let i = 0; i <= str1.length; i += 1) track[0][i] = i;
+  for (let j = 0; j <= str2.length; j += 1) track[j][0] = j;
+
+  for (let j = 1; j <= str2.length; j += 1) {
+    for (let i = 1; i <= str1.length; i += 1) {
+      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      track[j][i] = Math.min(
+        track[j][i - 1] + 1,
+        track[j - 1][i] + 1,
+        track[j - 1][i - 1] + indicator
+      );
+    }
+  }
+  const dist = track[str2.length][str1.length];
+  const maxLen = Math.max(str1.length, str2.length);
+  return Math.round(((maxLen - dist) / maxLen) * 100);
+}
+
+function checkKeywords(targetText, keywords) {
+  const normTarget = (targetText || '').replace(/\s+/g, '').toLowerCase();
+  return (keywords || []).map(kw => {
+    const normKw = kw.replace(/\s+/g, '').toLowerCase();
+    return { kw, matched: normTarget.includes(normKw) };
+  });
+}
+
+function gradeStandard() {
+  const q = testDeck[currentIdx];
+  let totalSim = 0;
+
+  q.subItems.forEach((sub, idx) => {
+    const userText = document.getElementById(`sub-input-${idx}`).value.trim();
+    const sim = calculateSimilarity(userText, sub.text);
+    const kwResults = checkKeywords(userText, sub.keywords);
+    totalSim += sim;
+
+    let kwHtml = '';
+    if (kwResults.length > 0) {
+      kwHtml = `
+        <div style="margin-top:6px;">
+          <span style="font-size:12px; font-weight:700;">필수 키워드: </span>
+          ${kwResults.map(k => `<span class="kw-tag ${k.matched ? 'kw-ok' : 'kw-miss'}">${k.matched ? '✓' : '✗'} ${escapeHtml(k.kw)}</span>`).join('')}
+        </div>
+      `;
+    }
+
+    document.getElementById(`sub-result-${idx}`).innerHTML = `
+      <div style="margin-top:10px; padding:10px; background:#f8fafc; border-radius:6px; border:1px solid var(--border);">
+        <div style="font-size:13px; font-weight:700; color:var(--primary);">일치도: ${sim}%</div>
+        ${kwHtml}
+        <div class="compare-view">
+          <strong>[기준서 원문]</strong><br>${escapeHtml(sub.text)}
+        </div>
+      </div>
+    `;
+  });
+
+  const avgSim = Math.round(totalSim / q.subItems.length);
+  const area = document.getElementById('result-area');
+  
+  let acronymHtml = '';
+  if (q.acronym) {
+    acronymHtml = `
+      <div style="margin-top:8px; font-size:14px; color:#6b21a8; font-weight:bold;">
+        🔑 두문자 복습: ${escapeHtml(q.acronym)}
+      </div>
+    `;
+  }
+
+  area.innerHTML = `
+    <div class="result-panel" style="margin-top:16px;">
+      <div style="font-size:18px; font-weight:700; color:var(--primary);">전체 평균 일치도: ${avgSim}%</div>
+      ${acronymHtml}
+      <button class="btn btn-secondary" style="margin-top:14px; width:100%;" onclick="nextQuestion()">다음 문제로 이동 ➔</button>
+    </div>
+  `;
+}
+
+function gradeOx() {
+  if (!userOxChoice) return alert('O 또는 X를 선택해 주세요.');
+  const q = testDeck[currentIdx];
+  const isAnswerCorrect = (userOxChoice === q.answer);
+  const userText = document.getElementById('user-input') ? document.getElementById('user-input').value.trim() : '';
+
+  let kwResults = [];
+  let sim = null;
+
+  if (q.answer === 'X' && userOxChoice === 'X') {
+    kwResults = checkKeywords(userText, q.keywords);
+    if (q.reason) sim = calculateSimilarity(userText, q.reason);
+  }
+
+  const area = document.getElementById('result-area');
+  let kwHtml = '';
+  if (kwResults.length > 0) {
+    kwHtml = `
+      <div style="margin-top:10px;">
+        <div style="font-size:13px; font-weight:700; margin-bottom:4px;">필수 키워드 채점:</div>
+        <div>${kwResults.map(k => `<span class="kw-tag ${k.matched ? 'kw-ok' : 'kw-miss'}">${k.matched ? '✓' : '✗'} ${escapeHtml(k.kw)}</span>`).join('')}</div>
+      </div>
+    `;
+  }
+
+  const statusHeader = `<div style="font-size:18px; font-weight:700; color:${isAnswerCorrect ? 'var(--success)' : 'var(--danger)'};">
+    ${isAnswerCorrect ? '정답입니다! (선택: ' + userOxChoice + ')' : '틀렸습니다. (정답: ' + q.answer + ')'}
+  </div>`;
+
+  area.innerHTML = `
+    <div class="result-panel">
+      ${statusHeader}
+      ${sim !== null && userOxChoice === 'X' ? `<div style="font-size:13px; color:var(--text-muted); margin-top:4px;">근거 문장 일치도: ${sim}%</div>` : ''}
+      ${kwHtml}
+      <div class="compare-view">
+        <div style="margin-bottom:6px;"><strong>[정답/기준서 원문]</strong><br>${escapeHtml(q.answer === 'X' ? q.reason : '해당 지문은 옳은 설명입니다.')}</div>
+        ${userText ? `<div><strong>[내가 작성한 답안]</strong><br>${escapeHtml(userText)}</div>` : ''}
+      </div>
+      <button class="btn btn-secondary" style="margin-top:14px; width:100%;" onclick="nextQuestion()">다음 문제로 이동 ➔</button>
+    </div>
+  `;
+}
+
+function nextQuestion() {
+  currentIdx++;
+  renderQuestion();
+}
+
+function escapeHtml(text) {
+  return (text || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(items, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `회계감사_암기노트_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const data = JSON.parse(evt.target.result);
+      if (Array.isArray(data)) {
+        items = data;
+        saveStorage();
+        alert('문제를 성공적으로 불러왔습니다.');
+      }
+    } catch(err) {
+      alert('파일 형식이 올바르지 않습니다.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// 초기화 실행
+addSubItemInput('(1)');
+updateCount();
+initTest();
+</script>
+</body>
+</html>
